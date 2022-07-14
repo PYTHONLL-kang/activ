@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import matplotlib.pyplot as plt
 from tensorflow.python.keras.models import load_model
 
-df = pd.read_excel('yap.xlsx')
+df = pd.read_excel('dataframe.xlsx')
 
 print(df.columns)
 
@@ -62,7 +62,7 @@ print('test_loss: ', scores[0])
 print('test_mae: ', scores[1])
 
 # 모델 저장
-model.save("dnn_estate.h5")
+model.save("test_dnn.h5")
 
 # 관찰된 metric 값들을 확인함
 for i in range(len(scores)):
@@ -88,7 +88,7 @@ acc_ax.legend(loc='lower left')
 plt.show()
 
 # 모델 불러오기
-loaded_model = load_model("dnn_estate.h5")
+loaded_model = load_model("test_dnn.h5")
 
 model.summary()
 
