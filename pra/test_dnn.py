@@ -1,20 +1,16 @@
 import numpy as np
 import pandas as pd
-from pandas import ExcelFile
 import tensorflow as tf
 from tensorflow.keras import layers
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from tensorflow.python.keras.models import load_model
 
 df = pd.read_excel('dataframe.xlsx')
-
-print(df.columns)
-
-X = df.iloc[:,1:7]
-y = df.iloc[:,-1]
-
-scaler = MinMaxScaler()   
+X = df.iloc[:,0:5]
+y = df.iloc[:,5]
+scaler = StandardScaler()   
 X_norm = scaler.fit_transform(X)
 
 numpY = np.empty((278,1)) 
@@ -22,25 +18,18 @@ for i in range(278):
     numpY[i]=y[i]
 
 # training set과 test set으로 나누기
-X_train, y_train = X_norm[0:180], numpY[0:180]
-X_test,  y_test  = X_norm[180::], numpY[180::]
+X_train,X_test,y_train,y_test=train_test_split(X_norm, numpY, test_size=0.2, random_state=42,shuffle=True)
 
 # 모델 구조 정의하기
 model = tf.keras.Sequential()  
 
 #입력 8개로부터 전달받는 12개 노드의 layer 생성
-model.add(layers.Dense(12, input_shape=(6,)))  
-model.add(layers.Activation('relu'))  
-
-model.add(layers.Dense(12))         
-model.add(layers.Activation('relu'))
-
-model.add(layers.Dense(12))         
-model.add(layers.Activation('relu'))
-
+model.add(layers.Dense(128, input_shape=(5,),activation='sigmoid'))  
+model.add(layers.Dense(64,activation='relu'))
+model.add(layers.Dense(16,activation='relu'))         
 #회귀모형(regression) 구축을 위해서 linear 활성함수 사용
-model.add(layers.Dense(1))
-model.add(layers.Activation('linear')) 
+model.add(layers.Dense(1,activation='linear')) 
+model.summary()
 
 # 모델 구축하기
 model.compile(
@@ -51,18 +40,13 @@ model.compile(
 hist = model.fit(
     X_train, y_train,
     batch_size=10,    
-    epochs=100,       
+    epochs=10000,       
     validation_split=0.2,  
-    callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)],  
-    verbose=2) 
-
-# 테스트 데이터 입력
-scores = model.evaluate(X_test, y_test)
-print('test_loss: ', scores[0])
-print('test_mae: ', scores[1])
-
+    callbacks=[tf.keras.callbacks.EarlyStopping(monitor='mae', patience=100)],  
+    verbose=2)
 # 모델 저장
 model.save("test_dnn.h5")
+scores = model.evaluate(X_test, y_test)
 
 # 관찰된 metric 값들을 확인함
 for i in range(len(scores)):
@@ -72,11 +56,11 @@ fig, loss_ax = plt.subplots(figsize=(15, 5))
 
 acc_ax = loss_ax.twinx()
 
-loss_ax.plot(hist.history['loss'], 'y', label='train loss')   # 훈련데이터의 loss (즉, mse)
-loss_ax.plot(hist.history['val_loss'], 'r', label='val loss') # 검증데이터의 loss (즉, mse)
+loss_ax.plot(hist.history['loss'], 'y', label='train_mse')   # 훈련데이터의 loss (즉, mse)
+loss_ax.plot(hist.history['val_loss'], 'r', label='test_mse') # 검증데이터의 loss (즉, mse)
 
-acc_ax.plot(hist.history['mae'], 'b', label='train mae')   # 훈련데이터의 mae
-acc_ax.plot(hist.history['val_mae'], 'g', label='val mae') # 검증데이터의 mae
+acc_ax.plot(hist.history['mae'], 'b', label='train_mae')   # 훈련데이터의 mae
+acc_ax.plot(hist.history['val_mae'], 'g', label='val_mae') # 검증데이터의 mae
 
 loss_ax.set_xlabel('epoch')
 loss_ax.set_ylabel('loss')
@@ -90,8 +74,6 @@ plt.show()
 # 모델 불러오기
 loaded_model = load_model("test_dnn.h5")
 
-model.summary()
-
 score = model.evaluate(X_test, y_test)
 print('test_loss: ', score[0])
-print('test_mse: ', score[1])
+print('test_mae: ', score[1])
