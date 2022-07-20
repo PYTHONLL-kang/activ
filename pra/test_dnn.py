@@ -12,6 +12,8 @@ df = pd.read_excel('dataframe.xlsx')
 #Y값(레이블) - 수도권 인구 과밀화율
 X = df.iloc[:,0:5] #0~5까지 열, 즉 메인변수들
 y = df.iloc[:,5] #마지막 열, 즉 레이블
+
+print(X)
 scaler = StandardScaler() #표준화. 평균이 0이고 분산이 1인 정규분포로 만드는 것
 X_norm = scaler.fit_transform(X) #메인 변수들끼리 단위가 모두 다르기 때문에 표준화 시켜야 함.
 
@@ -26,8 +28,8 @@ X_train,X_test,y_train,y_test=train_test_split(X_norm, numpY, test_size=0.2, ran
 model = tf.keras.Sequential()  
 
 #입력 8개로부터 전달받는 12개 노드의 layer 생성
-model.add(layers.Dense(128, input_shape=(5,),activation='sigmoid')) #메인변수 5개라서 input shape = 5. 활성함수 sigmoid로 
-model.add(layers.Dense(64,activation='relu')) #활성함수 relu
+model.add(layers.Dense(64, input_shape=(5,),activation='sigmoid')) #메인변수 5개라서 input shape = 5. 활성함수 sigmoid로 
+model.add(layers.Dense(32,activation='relu')) #활성함수 relu
 model.add(layers.Dense(16,activation='relu')) #활성함수 relu
 #회귀모형(regression) 구축을 위해서 linear 활성함수 사용
 model.add(layers.Dense(1,activation='linear')) 

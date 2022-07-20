@@ -44,19 +44,24 @@ model = Sequential()
 
 model.add(LSTM(units = 50, return_sequences = True, input_shape = (X_train.shape[1], 1)))
 model.add(Dropout(0.2))
+
 model.add(LSTM(units = 50, return_sequences = True))
 model.add(Dropout(0.2))
+
 model.add(LSTM(units = 50, return_sequences = True))
 model.add(Dropout(0.2))
+
 model.add(LSTM(units = 50))
 model.add(Dropout(0.2))
+
 model.add(Dense(units = 1))
+
 model.compile(optimizer = "adam", loss = "‘mean_squared_error’")
 
 model.fit(X_train, y_train, epochs = 100, batch_size = 32)
 
-dataset_train = df.iloc[:800, 1:2]
-dataset_test = df.iloc[800:, 1:2]
+dataset_train = df.iloc[:, 1:2]
+dataset_test = df.iloc[:, 1:2]
 
 dataset_total = pd.concat((dataset_train, dataset_test), axis = 0)
 
