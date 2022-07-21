@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import layers
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, Normalizer
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from tensorflow.python.keras.models import load_model
@@ -14,7 +14,7 @@ X = df.iloc[:,0:5] #0~5까지 열, 즉 메인변수들
 y = df.iloc[:,5] #마지막 열, 즉 레이블
 
 print(X)
-scaler = StandardScaler() #표준화. 평균이 0이고 분산이 1인 정규분포로 만드는 것
+scaler = RobustScaler() #표준화. 평균이 0이고 분산이 1인 정규분포로 만드는 것
 X_norm = scaler.fit_transform(X) #메인 변수들끼리 단위가 모두 다르기 때문에 표준화 시켜야 함.
 
 numpY = np.empty((278,1)) #pandas라서 numpy형으로 바꿈
@@ -47,7 +47,7 @@ hist = model.fit(
     epochs=10000,       
     validation_split=0.2,  
     callbacks=[tf.keras.callbacks.EarlyStopping(monitor='mae', patience=1)], #과적합 방지용. loss가 100 epoch 동안 개선되지 않으면 학습 중단 
-    verbose=2) #학습 중 출력 문구 설정. 0이면 출력 X, 1이면 훈련 진행 막대, 2이면 미니배치마다 loss
+    verbose=0) #학습 중 출력 문구 설정. 0이면 출력 X, 1이면 훈련 진행 막대, 2이면 미니배치마다 loss
 
 # 모델 저장
 model.save("test_dnn.h5") #test_dnn.h5라는 이름으로 모델 저장
