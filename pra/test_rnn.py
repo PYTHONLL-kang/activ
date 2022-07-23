@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 import matplotlib.pyplot as plt
 from sklearn import model_selection
 from keras import models, layers
@@ -17,12 +18,15 @@ class Machine():
         shape = self.data.X.shape[1:]
         self.model = rnn_model(shape)
 
-    def run(self, epochs=400):
+    def run(self, epochs=10000):
         d = self.data
         X_train, X_test, y_train, y_test = d.X_train, d.X_test, d.y_train, d.y_test
         X, y = d.X, d.y
         m = self.model
-        h = m.fit(X_train, y_train, epochs=epochs, validation_data=[X_test, y_test], verbose=2)
+        h = m.fit(X_train, y_train,
+                epochs=epochs,
+                validation_data=[X_test, y_test],
+                callbacks=[tf.keras.callbacks.EarlyStopping(monitor='loss', patience=32)], verbose=2)
 
         skeras.plot_loss(h)
         plt.title('History of training')
