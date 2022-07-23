@@ -9,7 +9,7 @@ from keraspp import skeras
 
 def main():
     machine = Machine()
-    machine.run(epochs=400)
+    machine.run(epochs=10000)
 
 
 class Machine():
@@ -26,7 +26,7 @@ class Machine():
         h = m.fit(X_train, y_train,
                 epochs=epochs,
                 validation_data=[X_test, y_test],
-                callbacks=[tf.keras.callbacks.EarlyStopping(monitor='loss', patience=32)], verbose=2)
+                callbacks=[tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10)], verbose=2)
 
         skeras.plot_loss(h)
         plt.title('History of training')
@@ -50,7 +50,7 @@ class Machine():
 
 def rnn_model(shape):
     m_x = layers.Input(shape=shape)  # X.shape[1:]
-    m_h = layers.LSTM(10)(m_x)
+    m_h = layers.SimpleRNN(10)(m_x)
     m_y = layers.Dense(1)(m_h)
     m = models.Model(m_x, m_y)
 
