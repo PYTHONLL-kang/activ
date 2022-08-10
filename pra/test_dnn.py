@@ -23,7 +23,7 @@ for i in range(278):
 
 #training set과 test set으로 나누기 #랜덤으로 스플릿
 X_train,X_test,y_train,y_test=train_test_split(X_norm, numpY, test_size=0.2, random_state=42,shuffle=True)
-
+print(X.shape)
 # 모델 구조 정의하기
 model = tf.keras.Sequential()  
 

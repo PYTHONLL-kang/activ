@@ -1,35 +1,17 @@
-import seaborn as sns
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
-# Create a dataset
+f, axes = plt.subplots(3, 4)
+f.set_size_inches((10, 7))
+plt.subplots_adjust(wspace = 0.3, hspace = 0.3)
 
-data = pd.read_excel('dataframe.xlsx')
+# [0, 1] 위치 막대 그래프
+axes[0, 1].bar(['x', 'y', 'z'], [15, 13, 18], color = ['r', 'g', 'y'], alpha = 0.4)
 
-corr = data.corr()
+# [1, 3] 위치 선 그래프
+axes[1][3].plot(range(5), [2, 8, 6, 3, 7])
 
-sns.clustermap(df, 
-               annot = True,      # 실제 값 화면에 나타내기
-               cmap = 'RdYlBu_r',  # Red, Yellow, Blue 색상으로 표시
-               vmin = -1, vmax = 1, #컬러차트 -1 ~ 1 범위로 표시
-              )
+# [2, 0] 위치 scatter 그래프(색깔 다르게 2개 겹치기)
+axes[2, 0].scatter(range(5), [2, 8, 6, 3, 7], color = 'red', s = 10)
+axes[2, 0].scatter([0.5, 1.5, 2.5, 3.5, 4.5], [4, 5, 4, 2, 6], color = 'purple', s = 10)
 
-df = raw.corr()
-# 그림 사이즈 지정
-fig, ax = plt.subplots( figsize=(7,7) )
-
-# 삼각형 마스크를 만든다(위 쪽 삼각형에 True, 아래 삼각형에 False)
-mask = np.zeros_like(df, dtype=np.bool)
-mask[np.triu_indices_from(mask)] = True
-
-# 히트맵을 그린다
-sns.heatmap(df, 
-            cmap = 'RdYlBu_r', 
-            annot = True,   # 실제 값을 표시한다
-            mask=mask,      # 표시하지 않을 마스크 부분을 지정한다
-            linewidths=.5,  # 경계면 실선으로 구분하기
-            cbar_kws={"shrink": .5},# 컬러바 크기 절반으로 줄이기
-            vmin = -1,vmax = 1   # 컬러바 범위 -1 ~ 1
-           )  
 plt.show()
