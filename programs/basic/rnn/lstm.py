@@ -41,6 +41,8 @@ class Machine():
         plt.show()
 
         yp = m.predict(X)
+        np.save('lstm_predict.npy',yp)
+        np.save('lstm_y.npy',y)
         plt.plot(yp, label='Origial')
         plt.plot(y, label='Prediction')
         plt.legend(loc=0)
@@ -61,7 +63,7 @@ def rnn_model(shape):
 
 
 class Dataset:
-    def __init__(self, fname='time_and_population.csv', D=1):
+    def __init__(self, fname='C:\\code\\activ\\programs\\basic\\rnn\\data.csv', D=1):
         data_dn = load_data(fname=fname)
         X, y = get_Xy(data_dn, D=D)
         X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=42)
@@ -70,7 +72,7 @@ class Dataset:
         self.X_train, self.X_test, self.y_train, self.y_test = X_train, X_test, y_train, y_test
 
 
-def load_data(fname='time_and_population.csv'):
+def load_data(fname='C:\\code\\activ\\programs\\basic\\rnn\\data.csv'):
     dataset = pd.read_csv(fname, usecols=[1], engine='python', skipfooter=3)
     data = dataset.values.reshape(-1)
     plt.plot(data)
