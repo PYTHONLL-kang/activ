@@ -1,4 +1,5 @@
 from glob import glob
+from pyexpat import model
 from tabnanny import verbose
 import numpy as np
 # numpy e형태로 안나오도록 하는 코드
@@ -30,7 +31,7 @@ from sklearn.model_selection import train_test_split
 import random
 from keras import Input
 from keras.layers import Dense
-df = pd.read_excel('aug_nine_var.xlsx')
+df = pd.read_excel('C:\\code\\activ\\programs\\gen\\aug_nine_var.xlsx')
 df = df.dropna()
 # x와 y데이터 일부 나누기
 X = df.iloc[:,1:22]
@@ -49,19 +50,7 @@ X = X_train
 Y = y_train
 #model을 생성한다. 원 dnn모델로, lstm모델과 합쳐 정확도를 높일 계획이다.
 global model
-model = tf.keras.Sequential()
-model.add(layers.Dense(1024, input_shape=(21,), activation='relu'))
-model.add(layers.Dense(512, activation='relu'))
-model.add(layers.Dense(256, activation='relu'))
-model.add(layers.Dense(128, activation='relu'))
-model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(32, activation='relu'))
-model.add(layers.Dense(16, activation='relu'))
-model.add(layers.Dense(8, activation='relu'))
-model.add(layers.Dense(1, activation='relu'))
-model.compile(loss='mse', optimizer='adam', metrics=['mae'])
-# 학습 시키기
-hist = model.fit(X_train, y_train, epochs=120, batch_size=16, validation_split=0.2)
+model = tf.keras.models.load_model('C:\\code\\activ\\programs\\gen\\dnn.h5')
 
 G_input = Input(shape = (15,))
 G_model = Sequential()
@@ -97,7 +86,7 @@ def train_step(F_model,G_model,epochs,batch,X,Y):
             train_data_G = G_model.predict(noise,verbose=0)[0]
             train_lab_G = G_model.predict(noise,verbose=0)[1]
             print("try: %d - %d" % (j,i))
-            print(train_data_G[0],train_lab_G[0][0],F_model.predict([train_data_G],verbose=0)[0][0],"\n")
+            print("t_d: {0}\n, t_l: {1}\n, f: {2}".format(train_data_G[0],train_lab_G[0][0],F_model.predict([train_data_G],verbose=0)[0][0]))
             global K_loss
             K_loss = np.square(F_model.predict([train_data_G],verbose=0) - train_lab_G)
             train_data_G = train_data_G.tolist()[0]

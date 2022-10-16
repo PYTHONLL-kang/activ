@@ -136,7 +136,7 @@ def train_step(real_model,generator,epochs,model):
         to_excel_list = scaler.inverse_transform(to_excel_list)
         to_excel_list = np.append(to_excel_list,model.predict(c,verbose=0))
         result_ = np.append(result_,to_excel_list).reshape((-1,22))
-        df = pd.DataFrame(result_)    
+        df = pd.DataFrame(result_)
         df.to_excel("basic_formula.xlsx")
     
 train_step(gen_thing_to_real_model,generator,epochs,model)
