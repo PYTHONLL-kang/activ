@@ -10,6 +10,8 @@ from collections import deque
 from sklearn.preprocessing import MinMaxScaler
 
 # %%
+import os
+os.chdir('../../')
 
 # %%
 from tensorflow.python.ops.numpy_ops import np_config
@@ -18,18 +20,13 @@ np_config.enable_numpy_behavior()
 np.set_printoptions(precision=6, suppress=True)
 
 # %%
-real_data = pd.read_excel('./nov_nine_var.xlsx').to_numpy()
-goal_data = pd.read_excel('./basic_formula.xlsx').to_numpy()
+real_data = pd.read_excel('./documents/nov_nine_var.xlsx').to_numpy()
+goal_data = pd.read_excel('./documents/result/basic_formula.xlsx').to_numpy()
 
 scaler = MinMaxScaler()
 scaler = scaler.fit(real_data[:,1:22])
 
 # %%
-def load_data(data, i):
-    data = scaler.transform(data[:,1:22])[i].reshape(1, 21)
-
-    return np.round(data, 2)
-
 def argmax(l):
     return max(range(len(l)), key=lambda i: l[i])
 
@@ -37,60 +34,68 @@ def argmin(l):
     return min(range(len(l)), key=lambda i: l[i])
 
 # %%
-start = load_data(real_data, -1)
-goal = load_data(goal_data, argmin(goal_data[:,-1]))
+start = scaler.transform(real_data[:,1:22])[-1].reshape(1, 21)
+goal = scaler.transform(goal_data[:,1:22])[argmin(goal_data[:,-1])].reshape(1, 21)
 
 print(goal[0])
 print(start[0])
 
-need_step = int(np.sum(abs(goal-start))*100)
-print(need_step)
+# %%
+lstm_state = scaler.transform(real_data[:,1:22])[-13:-1].reshape(1, 12, 21)
 
 # %%
 # dqn paramater
 GAMMA = 0.99
 EPS_DECAY = 0.0005
 BATCH_SIZE = 64
-TRAIN_FLAG = need_step * 100
-MEMORY_SIZE = TRAIN_FLAG * 100
-EPISODE_DONE = need_step * 100
+EPISODE_DONE = 1000
+TRAIN_FLAG = EPISODE_DONE * 10
+MEMORY_SIZE = TRAIN_FLAG * 10
 
 LEARN_FREQ = 50
-ACTION_NUM = 42
+ACTION_NUM = 5
 
 # %%
-def return_action(i):
-    a = np.zeros((1, 21))
-    j = i // 2
+model_list = [
+    [
+        tf.keras.models.load_model('./model/one_lstm/one_lstm_{0}/{1}_model'.format(j, i)) for i in range(21)
+    ]   for j in range(ACTION_NUM)
+]
 
-    if i % 2 == 0:
-        a[0][j] = -0.01
-    
-    else:
-        a[0][j] = 0.01
-    
-    return a
+# %%
+def shift_data(origin, d):
+    shift_d = np.zeros((1, 12, 21))
+    for i in range(21):
+        d_s = d[:,i]
+        shift_d[0][:,i] = np.concatenate((origin[0][1::][:,i], d_s), axis=0).reshape(1, 12)
+    return shift_d
+
+# %%
+def return_action(idx, s):
+    model_pred = np.zeros((5, 21, 1))
+    for i in range(5):
+        for j in range(21):
+            s_s = s[:,:,j].reshape(1, 12, 1)
+            model_pred[i][j] = model_list[i][j](s_s)[0]
+    return model_pred[idx].T
 
 # %%
 def return_state(s, a):
-    ns = s + a
+    ns = s[:,0:21] + a
     return ns
 
 # %%
 def return_reward(ns, gs):
-    dist = np.sqrt(np.sum(np.square(gs - ns)))
+    ns_s = ns[:,0:21]
+    dist = np.sqrt(np.sum(np.square(gs - ns_s)))
 
     end = 0
     for i in range(21):
-        if ns[0][i] == gs[0][i]:
+        if ns_s[0][i] == gs[0][i]:
             end += 4
     
     reward = -dist + end
     return reward
-
-# %%
-def argmax(l):
-    return max(range(len(l)), key=lambda i: l[i])
 
 # %%
 class Memory:  # stored as ( s, a, r, s_ ) in SumTree
@@ -240,7 +245,7 @@ class DQN_Agent:
 
     def set_model(self):
         net = DQN_Network()
-        net.build(input_shape=(1, 21))
+        net.build(input_shape=(1, 42))
 
         optim = tf.keras.optimizers.RMSprop(learning_rate=1e-11)
         net.compile(optimizer=optim, loss='mse')
@@ -266,10 +271,10 @@ class DQN_Agent:
     def convert_memory_to_input(self, batch):
         s, a_i, r, ns, d = zip(*batch)
 
-        states = tf.convert_to_tensor(s).reshape(BATCH_SIZE, 21)
+        states = tf.convert_to_tensor(s).reshape(BATCH_SIZE, 42)
         action_indexs = tf.convert_to_tensor(a_i)
         rewards = tf.convert_to_tensor(r)
-        next_states = tf.convert_to_tensor(ns).reshape(BATCH_SIZE, 21)
+        next_states = tf.convert_to_tensor(ns).reshape(BATCH_SIZE, 42)
         dones = tf.convert_to_tensor(d)
 
         return states, action_indexs, rewards, next_states, dones
@@ -303,7 +308,6 @@ class DQN_Agent:
 
     @tf.function
     def learn(self, states, action_indexs, rewards, next_states, dones, is_weight):
-        
         with tf.GradientTape() as tape:
             tape.watch(self.train_model.trainable_variables)
 
@@ -336,27 +340,23 @@ eps_hist = []
 steps_list = []
 
 for e in range(20000 + TRAIN_FLAG // EPISODE_DONE):
-    counter = [0 for i in range(42)]
-    state = start
+    state = np.array([start, goal]).reshape(1, 42)
     steps = 1
     reward = return_reward(state, goal)
     rewards = 0
-    min_reward = 100
-    max_reward = -100
-    c = 0
 
     while True:
+        lstm_state = shift_data(lstm_state, state[:,0:21])
         a_i, t, eps = agent.act(state)
-        action = return_action(a_i)
-        counter[a_i] += 1
-        c += t
+        action = return_action(a_i, lstm_state)
 
-        if steps == EPISODE_DONE or reward == 82:
+        checker = state[:,0:21] == goal[0]
+        if steps == EPISODE_DONE or all(checker[0]):
             done = 1
         else:
             done = 0
 
-        next_state = return_state(state, action)
+        next_state = np.array([return_state(state, action), goal]).reshape(1, 42)
         reward = return_reward(next_state, goal)
 
         agent.memorize(state, a_i, reward, next_state, done)
@@ -368,59 +368,14 @@ for e in range(20000 + TRAIN_FLAG // EPISODE_DONE):
         rewards += reward
         steps += 1
 
-        if reward < min_reward:
-            min_reward = reward
-
-        if reward > max_reward:
-            max_reward = reward
-
-        steps_list.append(reward)
-        state_hist.append(state)
-
         if done:
             rewards = rewards if steps - 1 == EPISODE_DONE else -100
             reward_hist[0].append(rewards)
-            reward_hist[1].append(rewards/steps)
-            reward_hist[2].append(max_reward)
-            reward_hist[3].append(min_reward)
-            loss_hist.append(loss)
-            eps_hist.append(eps)
-            steps_list.append(0 if steps - 1 == EPISODE_DONE else 1)
             print(f'============={e if steps -1 == EPISODE_DONE else 0}=============')
-            print(f"mean rewards: {round(rewards/steps, 3)}, net_loss: {round(loss, 3)}, most action: {argmax(counter)}|{max(counter)}/{steps}, greedy: {c}, eps: {round(eps, 5)}")
-            print(round(min_reward, 1), round(max_reward, 1), round(reward, 1))
-            print(state[0])
 
             break
-pd.DataFrame(state_hist).to_excel('state.xlsx')
-# %%
-# %%
-print(np.max(reward_hist[2]))
 
 # %%
-dnn_model = tf.keras.models.load_model('dnn.h5')
-encoder = tf.keras.models.load_model('encoder.h5')
 
-done = False
-state = start
-state_list = []
-while not done:
-    state_list.append(state)
-    if all(state[0] == goal[0]):
-        done = True
-    a, _, _ = agent.act(state)
-    state = return_state(state, a)
-
-p = dnn_model.predict(state_list)
-e = encoder.predict(state_list)
-
-fig = plt.figure(figsize=(10, 10))
-ax = fig.add_subplot(111, projection='3d')
-
-
-for s in e:
-    ax.scatter(s[0], s[1], s[2])
-
-plt.savefig('fig.jpg')
 
 
