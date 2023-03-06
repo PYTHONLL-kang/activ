@@ -10,8 +10,6 @@ from collections import deque
 from sklearn.preprocessing import MinMaxScaler
 
 # %%
-import os
-os.chdir('../../')
 
 # %%
 from tensorflow.python.ops.numpy_ops import np_config
@@ -20,8 +18,8 @@ np_config.enable_numpy_behavior()
 np.set_printoptions(precision=6, suppress=True)
 
 # %%
-real_data = pd.read_excel('./documents/nov_nine_var.xlsx').to_numpy()
-goal_data = pd.read_excel('./documents/result/basic_formula.xlsx').to_numpy()
+real_data = pd.read_excel('./nov_nine_var.xlsx').to_numpy()
+goal_data = pd.read_excel('./basic_formula.xlsx').to_numpy()
 
 scaler = MinMaxScaler()
 scaler = scaler.fit(real_data[:,1:22])
@@ -54,17 +52,24 @@ MEMORY_SIZE = TRAIN_FLAG * 10
 
 LEARN_FREQ = 50
 ACTION_NUM = 5
+LENGTH = 60
 
 # %%
-model_list = [
-    [
-        tf.keras.models.load_model('./model/one_lstm/one_lstm_{0}/{1}_model'.format(j, i)) for i in range(21)
-    ]   for j in range(ACTION_NUM)
-]
+if input("one or all?: ") == 'one':
+    model_list = [
+        [
+            tf.keras.models.load_model('./model/one_lstm/one_lstm_{0}/{1}_model'.format(j, i)) for i in range(21)
+        ]   for j in range(ACTION_NUM)
+    ]
+
+else:
+    model_list = [
+        tf.keras.models.load_model('./model/action_net/action_net{0}'.format(i)) for i in range(21)
+    ]
 
 # %%
 def shift_data(origin, d):
-    shift_d = np.zeros((1, 12, 21))
+    shift_d = np.zeros((1, LENGTH, 21))
     for i in range(21):
         d_s = d[:,i]
         shift_d[0][:,i] = np.concatenate((origin[0][1::][:,i], d_s), axis=0).reshape(1, 12)
@@ -75,7 +80,7 @@ def return_action(idx, s):
     model_pred = np.zeros((5, 21, 1))
     for i in range(5):
         for j in range(21):
-            s_s = s[:,:,j].reshape(1, 12, 1)
+            s_s = s[:,:,j].reshape(1, LENGTH, 1)
             model_pred[i][j] = model_list[i][j](s_s)[0]
     return model_pred[idx].T
 
