@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
 
-dnn_model = tf.keras.models.load_model('C:\\code\\activ\\model\\dnn.h5')
+dnn_model = tf.keras.models.load_model('./model/dnn.h5')
 
 def make_sequence(X, length):
     """
